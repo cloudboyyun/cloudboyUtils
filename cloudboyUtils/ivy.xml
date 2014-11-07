@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="1.0">
- 	<info organisation="com.99bill" module="cpsUT"/>
+ 	<info organisation="com.cloudboy" module="utils"/>
 	<configurations>
 			<conf name="default"/>
 			<conf name="compile"/>
