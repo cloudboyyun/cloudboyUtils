@@ -9,7 +9,13 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+
 import javax.crypto.Cipher;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 /**
  * 证书组件
@@ -20,6 +26,8 @@ public abstract class CertificateCoder extends Coder {
 	 */
 	public static final String KEY_STORE = "JKS";
 	public static final String X509 = "X.509";
+	public static final String SunX509 = "SunX509";
+	public static final String SSL = "SSL";
 
 	/**
 	 * 由KeyStore获得私钥
@@ -307,5 +315,48 @@ public abstract class CertificateCoder extends Coder {
 	public static boolean verifyCertificate(String keyStorePath, String alias,
 			String password) {
 		return verifyCertificate(new Date(), keyStorePath, alias, password);
+	}
+	
+	/**
+	 * 获得SSLSocektFactory
+	 * @param password 密钥库密码
+	 * @param keyStorePath 密钥库路径
+	 * @param trustKeyStorePath 信任库路径
+	 * @return
+	 * @throws Exception
+	 */
+	private static SSLSocketFactory getSSLSocketFactory(String password,
+			String keyStorePath, String trustKeyStorePath) throws Exception {
+		// 初始化密钥库
+		KeyManagerFactory keyManagerFactory = KeyManagerFactory
+				.getInstance(SunX509);
+		KeyStore keyStore = getKeyStore(keyStorePath, password);
+		keyManagerFactory.init(keyStore, password.toCharArray());
+		// 初始化信任库
+		TrustManagerFactory trustManagerFactory = TrustManagerFactory
+				.getInstance(SunX509);
+		KeyStore trustkeyStore = getKeyStore(trustKeyStorePath, password);
+		trustManagerFactory.init(trustkeyStore);
+		// 初始化SSL上下文
+		SSLContext ctx = SSLContext.getInstance(SSL);
+		ctx.init(keyManagerFactory.getKeyManagers(),
+				trustManagerFactory.getTrustManagers(), null);
+		SSLSocketFactory sf = ctx.getSocketFactory();
+		return sf;
+	}
+
+	/**
+	 * 为HttpsURLConnection配置SSLSocketFactory
+	 * @param conn HttpsURLConnection
+	 * @param password 密钥库密码
+	 * @param keyStorePath 密钥库路径
+	 * @param trustKeyStorePath 信任库路径
+	 * @throws Exception
+	 */
+	public static void configSSLSocketFactory(HttpsURLConnection conn,
+			String password, String keyStorePath, String trustKeyStorePath)
+			throws Exception {
+		conn.setSSLSocketFactory(getSSLSocketFactory(password, keyStorePath,
+				trustKeyStorePath));
 	}
 }

@@ -1,6 +1,13 @@
 package com.cloudboy.util.security;
 
 import static org.junit.Assert.*;
+
+import java.io.DataInputStream;
+import java.io.InputStream;
+import java.net.URL;
+
+import javax.net.ssl.HttpsURLConnection;
+
 import org.junit.Test;
 
 public class CertificateCoderTest {
@@ -48,5 +55,26 @@ public class CertificateCoderTest {
 				certificatePath);
 		System.out.println("状态:" + status);
 		assertTrue(status);
+	}
+	
+	private String clientKeyStorePath = "d:/doc/key/java/cloudboyClient.keystore";
+	private String clientPassword = "654321";
+	
+	@Test
+	public void testHttps() throws Exception {
+		URL url = new URL("https://cloudboy:8053/studyWeb/HelloServlet");
+		HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+		conn.setDoInput(true);
+		conn.setDoOutput(true);
+		CertificateCoder.configSSLSocketFactory(conn, clientPassword,
+				clientKeyStorePath, clientKeyStorePath);
+		InputStream is = conn.getInputStream();
+		int length = conn.getContentLength();
+		DataInputStream dis = new DataInputStream(is);
+		byte[] data = new byte[length];
+		dis.readFully(data);
+		dis.close();
+		System.out.println(new String(data));
+		conn.disconnect();
 	}
 }
