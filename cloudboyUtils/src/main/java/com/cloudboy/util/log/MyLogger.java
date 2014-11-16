@@ -9,7 +9,7 @@ public class MyLogger {
 		logger = Logger.getLogger(clazz);
 	}
 	
-	static MyLogger getLogger(Class<?> clazz) {
+	static public MyLogger getLogger(Class<?> clazz) {
 		return new MyLogger(clazz);
 	}
 	
