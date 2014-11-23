@@ -41,9 +41,9 @@ public class SecurityUtil {
 	 * @throws IOException 
 	 * @throws Exception
 	 */
-	public static KeyPair getPrivateKey(InputStream in,
+	public static KeyPair getPrivateKeyFromPemFormatFile(final InputStream pemFile,
 			final String password) throws IOException {
-		PEMReader reader = new PEMReader(new InputStreamReader(in), new PasswordFinder() {
+		PEMReader reader = new PEMReader(new InputStreamReader(pemFile), new PasswordFinder() {
 			public char[] getPassword() {
 				if(password == null) {
 					return new char[]{};
@@ -59,16 +59,48 @@ public class SecurityUtil {
 	}
 	
 	/**
-	 * 从PEM格式的公钥密钥文件中获取公钥
+	 * 把私钥保存为PEM格式文件
+	 * @param key 私钥
+	 * @param password 密码 
+	 * @param pemFilePath 输出的pem文件全路径
+	 * @throws IOException
+	 */
+	public static void savePEM(final PrivateKey key, final String password,
+			final String pemFilePath) throws IOException {
+		PEMWriter writer = new PEMWriter(new FileWriter(pemFilePath));
+		if(password == null) {
+			writer.writeObject(key);
+		} else {
+			writer.writeObject(key, "DESEDE", password.toCharArray(),
+				new SecureRandom());
+		}
+		writer.close();
+	}
+	
+	/**
+	 * 虽然一般公钥会存在证书(crt格式）里，但也能保存为pem格式（虽然一般不会这么干），但不能加密码。而且OpenSSL好像也不知道怎么读取这个文件。
+	 * @param key 公钥
+	 * @param pemFilePath 输出的pem文件全路径
+	 * @throws IOException
+	 */
+	public static void savePEM(final PublicKey key, final String pemFilePath) throws IOException {
+		PEMWriter writer = new PEMWriter(new FileWriter(pemFilePath));
+		writer.writeObject(key);
+		writer.close();
+	}
+	
+	/**
+	 * 从PEM格式的公钥密钥文件中获取公钥.
+	 * 通常公钥不会存储为PEM格式，而是存储在证书(crt格式)里。但使用本类的savePEM方法，也能把公钥保存为PEM格式。
 	 * @param in 公钥密钥文件
 	 * @param password 密码
 	 * @return
 	 * @throws IOException 
 	 * @throws Exception
 	 */
-	public static PublicKey getPublicKey(InputStream in,
+	public static PublicKey getPublicKeyFromPemFormatFile(final InputStream pemFile,
 			final String password) throws IOException  {
-		PEMReader reader = new PEMReader(new InputStreamReader(in), new PasswordFinder() {
+		PEMReader reader = new PEMReader(new InputStreamReader(pemFile), new PasswordFinder() {
 			public char[] getPassword() {
 				if(password == null) {
 					return new char[]{};
@@ -83,22 +115,12 @@ public class SecurityUtil {
 		return key;
 	}
 	
-	public static void savePEM(PrivateKey key, String rootMiyuePwd,
-			String rootMiyuePath) throws Exception {
-		PEMWriter writer = new PEMWriter(new FileWriter(rootMiyuePath));
-		writer.writeObject(key, "DESEDE", rootMiyuePwd.toCharArray(),
-				new SecureRandom());
-		writer.close();
-	}
-	
 	public static void saveX509Certificate(X509Certificate certificate,
 			String rootcertPath) throws Exception {
 		FileOutputStream stream = new FileOutputStream(rootcertPath);
 		stream.write(certificate.getEncoded());
 		stream.close();
-	}
-
-	
+	}	
 
 	/**
 	 * 产生RSA密钥对
