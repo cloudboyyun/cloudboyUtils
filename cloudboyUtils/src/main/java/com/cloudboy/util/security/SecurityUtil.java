@@ -1,9 +1,8 @@
 package com.cloudboy.util.security;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -22,12 +21,9 @@ import javax.crypto.Cipher;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import com.cloudboy.util.log.MyLogger;
-
 public class SecurityUtil {
 	
 	final public static String DEFAULT_SIGN_ALGORITHM = "SHA1withRSA";
-	final private static MyLogger logger = MyLogger.getLogger(SecurityUtil.class);
 	public static String DEFAULT_CHARSET_NAME = "utf-8";
 	
 	static {
@@ -45,7 +41,6 @@ public class SecurityUtil {
 	 */
 	public static byte[] encrypt(byte[] data, Key key, String transformation) throws Exception {
 		Cipher cipher;
-		logger.info("key.getAlgorithm():", key.getAlgorithm());
 		if(transformation == null) {
 			cipher = Cipher.getInstance(key.getAlgorithm(), BouncyCastleProvider.PROVIDER_NAME);
 		} else {
@@ -84,7 +79,6 @@ public class SecurityUtil {
 	 */
 	public static byte[] decrypt(byte[] data, Key key, String transformation) throws Exception {
 		Cipher cipher;
-		logger.info("key.getAlgorithm():", key.getAlgorithm());
 		if(transformation == null) {
 			cipher = Cipher.getInstance(key.getAlgorithm(), BouncyCastleProvider.PROVIDER_NAME);
 		} else {
@@ -109,7 +103,7 @@ public class SecurityUtil {
 		}
 		byte[] src = Base64.decode(data);
 		byte[] dst = decrypt(src, key, transformation);
-		String result = new String(dst);
+		String result = new String(dst, DEFAULT_CHARSET_NAME);
 		return result;
 	}
 	
@@ -235,10 +229,10 @@ public class SecurityUtil {
 	 * @throws IOException
 	 */
 	public static PublicKey generatePublicKey(PrivateKey privateKey, String password) throws IOException {
-		File pemFilePath = File.createTempFile("cloudboy", "pem");
-		KeyFileUtil.savePEM(privateKey, password, pemFilePath.getAbsolutePath());
-		InputStream in = new FileInputStream(pemFilePath);
-		KeyPair keyPair = KeyFileUtil.getPrivateKeyFromPemFormatFile(in, password);
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		KeyFileUtil.savePEM(privateKey, password, outputStream);
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+		KeyPair keyPair = KeyFileUtil.getPrivateKeyFromPemFormatFile(inputStream, password);
 		return keyPair.getPublic();
 	}
 }

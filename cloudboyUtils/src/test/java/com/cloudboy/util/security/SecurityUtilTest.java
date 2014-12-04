@@ -93,10 +93,10 @@ public class SecurityUtilTest {
 		logger.info("key:", privateKey.getClass());
 		Certificate certificate = keyStore.getCertificate("mbp");
 		PublicKey publicKey1 = certificate.getPublicKey();
-		logger.info(publicKey1.getEncoded());
+		logger.info(Base64.encode(publicKey1.getEncoded()));
 		
 		PublicKey publicKey2 = SecurityUtil.generatePublicKey(privateKey, "111111");
-		logger.info(publicKey2.getEncoded());
+		logger.info(Base64.encode(publicKey2.getEncoded()));
 		assertTrue(publicKey1.equals(publicKey2));
 	}
 }

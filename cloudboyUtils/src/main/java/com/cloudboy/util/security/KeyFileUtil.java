@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -64,9 +66,8 @@ public class KeyFileUtil {
 	 * @param pemFilePath 输出的pem文件全路径
 	 * @throws IOException
 	 */
-	public static void savePEM(final PrivateKey key, final String password,
-			final String pemFilePath) throws IOException {
-		PEMWriter writer = new PEMWriter(new FileWriter(pemFilePath));
+	public static void savePEM(final PrivateKey key, final String password,	OutputStream pemFileOutputStream) throws IOException {
+		PEMWriter writer = new PEMWriter(new OutputStreamWriter(pemFileOutputStream));
 		if(password == null) {
 			writer.writeObject(key);
 		} else {

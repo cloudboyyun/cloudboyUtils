@@ -3,8 +3,10 @@ package com.cloudboy.util.security;
 import static org.junit.Assert.assertTrue;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -56,7 +58,8 @@ public class KeyFileUtilTest {
 		KeyPair keyPair = KeyFileUtil.getPrivateKeyFromPemFormatFile(privateKeyFile, password);
 		PrivateKey privateKey = keyPair.getPrivate();
 		String pemFileCopy = "d:\\temp\\privateKey-copy.pem";
-		KeyFileUtil.savePEM(privateKey, password, pemFileCopy);
+		OutputStream pemFileCopyOutputStream = new FileOutputStream(pemFileCopy);
+		KeyFileUtil.savePEM(privateKey, password, pemFileCopyOutputStream);
 		PublicKey publicKey = keyPair.getPublic();
 		
 		// 重新读入
@@ -83,7 +86,8 @@ public class KeyFileUtilTest {
 		PrivateKey privateKey = keyPair.getPrivate();
 		String pemFileCopy = "d:\\temp\\privateKey-copy2.pem";
 		String newPassword = "0okm,lp-";
-		KeyFileUtil.savePEM(privateKey, newPassword, pemFileCopy);
+		OutputStream pemFileCopyOutputStream = new FileOutputStream(pemFileCopy);
+		KeyFileUtil.savePEM(privateKey, newPassword, pemFileCopyOutputStream);
 		
 		// 重新读入
 		FileInputStream inCopy = new FileInputStream(pemFileCopy);
