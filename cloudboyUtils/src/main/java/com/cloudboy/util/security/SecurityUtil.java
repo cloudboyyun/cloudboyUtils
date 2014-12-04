@@ -1,7 +1,9 @@
 package com.cloudboy.util.security;
 
-//import java.io.FileInputStream;
-//import java.io.FileOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -21,16 +23,6 @@ import javax.crypto.Cipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.cloudboy.util.log.MyLogger;
-//import java.security.Key;
-//import java.security.KeyPairGenerator;
-//import java.security.cert.CertificateFactory;
-//import java.security.cert.X509Certificate;
-//
-//import javax.crypto.Cipher;
-//import javax.crypto.SecretKey;
-//import javax.crypto.SecretKeyFactory;
-//import javax.crypto.spec.PBEKeySpec;
-//import javax.crypto.spec.PBEParameterSpec;
 
 public class SecurityUtil {
 	
@@ -233,39 +225,20 @@ public class SecurityUtil {
 		byte[] srcBytes = src.getBytes(DEFAULT_CHARSET_NAME);
 		return verifySign(key, cryptBytes, srcBytes, algorithm);
 	}
-
-
-//
-//	public static byte[] encrypt(Key key, byte[] b, String suan)
-//			throws Exception {
-//		Cipher newcipher = Cipher.getInstance(suan);
-//		newcipher.init(Cipher.ENCRYPT_MODE, key);
-//		return newcipher.doFinal(b);
-//	}
-//
-//	public static byte[] encryptByKouling(byte[] s, String suan, String kou)
-//			throws Exception {
-//		PBEKeySpec spec = new PBEKeySpec(kou.toCharArray());
-//		SecretKeyFactory factory = SecretKeyFactory.getInstance(suan);
-//		SecretKey key = factory.generateSecret(spec);
-//		Cipher cipher = Cipher.getInstance(suan);
-//		PBEParameterSpec pps = new PBEParameterSpec(new byte[] { 0xF, 0x0, 0x1,
-//				0x2, 0x3, 0x4, 0x5, 0x6 }, 1);
-//		cipher.init(Cipher.ENCRYPT_MODE, key, pps);
-//		byte[] debyte = cipher.doFinal(s);
-//		return debyte;
-//	}
-//
-//	public static byte[] decryptByKouling(byte[] s, String suan, String kou)
-//			throws Exception {
-//		PBEKeySpec spec = new PBEKeySpec(kou.toCharArray());
-//		SecretKeyFactory factory = SecretKeyFactory.getInstance(suan);
-//		SecretKey key = factory.generateSecret(spec);
-//		Cipher cipher = Cipher.getInstance(suan);
-//		PBEParameterSpec pps = new PBEParameterSpec(new byte[] { 0xF, 0x0, 0x1,
-//				0x2, 0x3, 0x4, 0x5, 0x6 }, 1);
-//		cipher.init(Cipher.DECRYPT_MODE, key, pps);
-//		byte[] debyte = cipher.doFinal(s);
-//		return debyte;
-//	}
+	
+	/**
+	 * 使用私钥生成公钥<br>
+	 * 在JDK库中找不到现成方法，只好用这个土方法。
+	 * @param privateKey
+	 * @param password
+	 * @return
+	 * @throws IOException
+	 */
+	public static PublicKey generatePublicKey(PrivateKey privateKey, String password) throws IOException {
+		File pemFilePath = File.createTempFile("cloudboy", "pem");
+		KeyFileUtil.savePEM(privateKey, password, pemFilePath.getAbsolutePath());
+		InputStream in = new FileInputStream(pemFilePath);
+		KeyPair keyPair = KeyFileUtil.getPrivateKeyFromPemFormatFile(in, password);
+		return keyPair.getPublic();
+	}
 }

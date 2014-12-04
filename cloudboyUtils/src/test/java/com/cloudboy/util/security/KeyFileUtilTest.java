@@ -57,14 +57,17 @@ public class KeyFileUtilTest {
 		PrivateKey privateKey = keyPair.getPrivate();
 		String pemFileCopy = "d:\\temp\\privateKey-copy.pem";
 		KeyFileUtil.savePEM(privateKey, password, pemFileCopy);
+		PublicKey publicKey = keyPair.getPublic();
 		
 		// 重新读入
 		FileInputStream inCopy = new FileInputStream(pemFileCopy);
 		KeyPair keyPairCopy = KeyFileUtil.getPrivateKeyFromPemFormatFile(inCopy, password);
 		PrivateKey privateKeyCopy = keyPairCopy.getPrivate();
+		PublicKey publicKeyCopy = keyPair.getPublic();
 		
 		// 和源private key应该相同
 		assertTrue(privateKey.equals(privateKeyCopy));
+		assertTrue(publicKey.equals(publicKeyCopy));
 	}
 	
 	/**
@@ -122,7 +125,7 @@ public class KeyFileUtilTest {
 	 */
 	@Test
 	public void getKeyStore() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
-		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/mbp.pfx");
+		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
 		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
 		Enumeration<String> aliases = keyStore.aliases();
 		while(aliases.hasMoreElements()) {
@@ -137,7 +140,7 @@ public class KeyFileUtilTest {
 	 */
 	@Test
 	public void saveLoadX509Certificate() throws Exception {
-		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/mbp.pfx");
+		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
 		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
 		Certificate certificate = keyStore.getCertificate("mbp");
 		String certFile = "d:\\temp\\mbp.crt";

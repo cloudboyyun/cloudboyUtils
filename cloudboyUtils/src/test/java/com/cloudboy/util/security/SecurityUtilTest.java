@@ -60,7 +60,7 @@ public class SecurityUtilTest {
 	 */
 	@Test
 	public void signAndVerifySign() throws Exception {
-		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/mbp.pfx");
+		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
 		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
 		PrivateKey privateKey = (PrivateKey)keyStore.getKey("mbp", "111111".toCharArray());
 		logger.info("key:", privateKey.getClass());
@@ -72,5 +72,31 @@ public class SecurityUtilTest {
 		logger.info("sign:", sign);
 		boolean verify = SecurityUtil.verifySign(publicKey, sign, word, null);
 		assertTrue(verify);
+		
+		PublicKey publicKey2 = SecurityUtil.generatePublicKey(privateKey, "111111");
+		boolean verify2 = SecurityUtil.verifySign(publicKey2, sign, word, null);
+		assertTrue(verify2);
+	}
+	
+	@Test
+	public void generateRSAKeyPair() throws Exception {
+		KeyPair keyPair = SecurityUtil.generateRSAKeyPair();
+		logger.info(keyPair.getPrivate());
+		logger.info(keyPair.getPublic());
+	}
+	
+	@Test
+	public void generatePublicKey() throws Exception {
+		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
+		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
+		PrivateKey privateKey = (PrivateKey)keyStore.getKey("mbp", "111111".toCharArray());
+		logger.info("key:", privateKey.getClass());
+		Certificate certificate = keyStore.getCertificate("mbp");
+		PublicKey publicKey1 = certificate.getPublicKey();
+		logger.info(publicKey1.getEncoded());
+		
+		PublicKey publicKey2 = SecurityUtil.generatePublicKey(privateKey, "111111");
+		logger.info(publicKey2.getEncoded());
+		assertTrue(publicKey1.equals(publicKey2));
 	}
 }
