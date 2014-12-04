@@ -10,7 +10,7 @@ public class PackUpMain {
 	public static void main(String[] args) {
 		PackUpService service = new PackUpServiceMp3Impl();
 		File folder = new File("D:\\TDDownload\\myNovel");
-		String[] removeStrings = {"\\{有声听书吧www.Ysts8.com\\}"};
+		String[] removeStrings = {"\\{有声听书吧 www.ysts8.com\\}"};
 		service.packUp(folder, removeStrings);
 	}
 }

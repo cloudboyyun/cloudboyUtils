@@ -2,8 +2,11 @@ package com.cloudboy.util.log;
 
 import org.apache.log4j.Logger;
 
+import com.thoughtworks.xstream.XStream;
+
 public class MyLogger {
 	private Logger logger;
+	private static XStream xs = new XStream();
 	
 	private MyLogger(Class<?> clazz) {
 		logger = Logger.getLogger(clazz);
@@ -41,6 +44,10 @@ public class MyLogger {
 	public void debug(Object message, Throwable t, Object... args) {
 		String value = buildMessage(message, args);
 		logger.debug(value, t);
+	}
+	
+	public String toXML(Object obj) {
+		return xs.toXML(obj);
 	}
 	
 	private String buildMessage(Object message, Object... args) {

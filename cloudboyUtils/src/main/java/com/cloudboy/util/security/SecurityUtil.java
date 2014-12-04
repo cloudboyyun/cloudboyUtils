@@ -2,18 +2,27 @@ package com.cloudboy.util.security;
 
 //import java.io.FileInputStream;
 //import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
 import java.security.Key;
-//import java.security.Key;
 import java.security.KeyPair;
-//import java.security.KeyPairGenerator;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.Signature;
+import java.security.SignatureException;
+
+import javax.crypto.Cipher;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import com.cloudboy.util.log.MyLogger;
+//import java.security.Key;
+//import java.security.KeyPairGenerator;
 //import java.security.cert.CertificateFactory;
 //import java.security.cert.X509Certificate;
 //
@@ -23,106 +32,18 @@ import java.security.Security;
 //import javax.crypto.spec.PBEKeySpec;
 //import javax.crypto.spec.PBEParameterSpec;
 
-
-
-import javax.crypto.Cipher;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMReader;
-import org.bouncycastle.openssl.PEMWriter;
-import org.bouncycastle.openssl.PasswordFinder;
-
 public class SecurityUtil {
+	
+	final public static String DEFAULT_SIGN_ALGORITHM = "SHA1withRSA";
+	final private static MyLogger logger = MyLogger.getLogger(SecurityUtil.class);
+	public static String DEFAULT_CHARSET_NAME = "utf-8";
 	
 	static {
 		Security.addProvider(new BouncyCastleProvider());
 	}
 	
 	/**
-	 * 从PEM格式的私钥密钥文件中获取密钥对
-	 * @param in 私钥密钥文件
-	 * @param rootMiyuePwd 密码
-	 * @return 私钥可以推导出公钥，所以返回的是包含私钥和公钥的密钥对
-	 * @throws IOException 
-	 * @throws Exception
-	 */
-	public static KeyPair getPrivateKeyFromPemFormatFile(final InputStream pemFile,
-			final String password) throws IOException {
-		PEMReader reader = new PEMReader(new InputStreamReader(pemFile), new PasswordFinder() {
-			public char[] getPassword() {
-				if(password == null) {
-					return new char[]{};
-				}
-				return password.toCharArray();
-			}
-
-		});
-		Object obj = reader.readObject();
-		reader.close();
-		KeyPair key = (KeyPair) obj;		
-		return key;
-	}
-	
-	/**
-	 * 把私钥保存为PEM格式文件
-	 * @param key 私钥
-	 * @param password 密码 
-	 * @param pemFilePath 输出的pem文件全路径
-	 * @throws IOException
-	 */
-	public static void savePEM(final PrivateKey key, final String password,
-			final String pemFilePath) throws IOException {
-		PEMWriter writer = new PEMWriter(new FileWriter(pemFilePath));
-		if(password == null) {
-			writer.writeObject(key);
-		} else {
-			writer.writeObject(key, "DESEDE", password.toCharArray(),
-				new SecureRandom());
-		}
-		writer.close();
-	}
-	
-	/**
-	 * 虽然一般公钥会存在证书(crt格式）里，但也能保存为pem格式（虽然一般不会这么干），但不能加密码。而且OpenSSL好像也不知道怎么读取这个文件。
-	 * @param key 公钥
-	 * @param pemFilePath 输出的pem文件全路径
-	 * @throws IOException
-	 */
-	public static void savePEM(final PublicKey key, final String pemFilePath) throws IOException {
-		PEMWriter writer = new PEMWriter(new FileWriter(pemFilePath));
-		writer.writeObject(key);
-		writer.close();
-	}
-	
-	/**
-	 * 从PEM格式的公钥密钥文件中获取公钥.
-	 * 通常公钥不会存储为PEM格式，而是存储在证书(crt格式)里。但使用本类的savePEM方法，也能把公钥保存为PEM格式。
-	 * @param in 公钥密钥文件
-	 * @param password 密码
-	 * @return
-	 * @throws IOException 
-	 * @throws Exception
-	 */
-	public static PublicKey getPublicKeyFromPemFormatFile(final InputStream pemFile,
-			final String password) throws IOException  {
-		PEMReader reader = new PEMReader(new InputStreamReader(pemFile), new PasswordFinder() {
-			public char[] getPassword() {
-				if(password == null) {
-					return new char[]{};
-				}
-				return password.toCharArray();
-			}
-
-		});
-		Object obj = reader.readObject();
-		reader.close();
-		PublicKey key = (PublicKey) obj;		
-		return key;
-	}
-	
-	/**
-	 * 私钥加密
-	 * 
+	 * 公钥或私钥加密 
 	 * @param data
 	 * @param keyStorePath
 	 * @param alias
@@ -132,6 +53,7 @@ public class SecurityUtil {
 	 */
 	public static byte[] encrypt(byte[] data, Key key, String transformation) throws Exception {
 		Cipher cipher;
+		logger.info("key.getAlgorithm():", key.getAlgorithm());
 		if(transformation == null) {
 			cipher = Cipher.getInstance(key.getAlgorithm(), BouncyCastleProvider.PROVIDER_NAME);
 		} else {
@@ -140,10 +62,27 @@ public class SecurityUtil {
 		cipher.init(Cipher.ENCRYPT_MODE, key);
 		return cipher.doFinal(data);
 	}
+	
+	/**
+	 * 公钥或私钥加密 
+	 * @param data
+	 * @param keyStorePath
+	 * @param alias
+	 * @param password
+	 * @return 使用Base64格式的加密后文字
+	 * @throws Exception
+	 */
+	public static String encrypt(String data, Key key, String transformation) throws Exception {
+		if(data == null) {
+			return null;
+		}
+		byte[] bytes = encrypt(data.getBytes(DEFAULT_CHARSET_NAME), key, transformation);
+		String result = Base64.encode(bytes);
+		return result;
+	}
 
 	/**
-	 * 私钥解密
-	 * 
+	 * 公钥或私钥解密 
 	 * @param data
 	 * @param keyStorePath
 	 * @param alias
@@ -153,6 +92,7 @@ public class SecurityUtil {
 	 */
 	public static byte[] decrypt(byte[] data, Key key, String transformation) throws Exception {
 		Cipher cipher;
+		logger.info("key.getAlgorithm():", key.getAlgorithm());
 		if(transformation == null) {
 			cipher = Cipher.getInstance(key.getAlgorithm(), BouncyCastleProvider.PROVIDER_NAME);
 		} else {
@@ -162,64 +102,139 @@ public class SecurityUtil {
 		return cipher.doFinal(data);
 	}
 	
-//	public static void saveX509Certificate(X509Certificate certificate,
-//			String rootcertPath) throws Exception {
-//		FileOutputStream stream = new FileOutputStream(rootcertPath);
-//		stream.write(certificate.getEncoded());
-//		stream.close();
-//	}	
-//
-//	/**
-//	 * 产生RSA密钥对
-//	 * @return
-//	 * @throws Exception
-//	 */
-//	public static KeyPair generateRSAKeyPair() throws Exception {
-//		KeyPairGenerator kpGen = KeyPairGenerator.getInstance("RSA");
-//		kpGen.initialize(1024, new SecureRandom());
-//		return kpGen.generateKeyPair();
-//	}
-//
-//	public static byte[] RSASign(PrivateKey key, byte[] src) throws Exception {
-//		java.security.Signature sign = java.security.Signature.getInstance(
-//				"SHA1withRSA", "BC");
-//		sign.initSign(key);
-//		sign.update(src);
-//		return sign.sign();
-//	}
-//
-//	public static boolean RSAVerifySign(PublicKey key, byte[] crypt, byte[] src)
-//			throws Exception {
-//
-//		java.security.Signature sign = java.security.Signature.getInstance(
-//				"SHA1withRSA", "BC");
-//		sign.initVerify(key);
-//		sign.update(src);
-//		return sign.verify(crypt);
-//	}
-//
-//	public static X509Certificate getCertificate(String rootCertPath)
-//			throws Exception {
-//		CertificateFactory factory = CertificateFactory.getInstance("X.509");
-//		FileInputStream inputStream = new FileInputStream(rootCertPath);
-//		X509Certificate certificate = (X509Certificate) factory
-//				.generateCertificate(inputStream);
-//		return certificate;
-//	}
-//
-//	public static void write(String file, byte[] data) throws Exception {
-//		FileOutputStream outputStream = new FileOutputStream(file);
-//		outputStream.write(data);
-//		outputStream.close();
-//	}
-//
-//	public static byte[] read(String file) throws Exception {
-//		FileInputStream stream = new FileInputStream(file);
-//		byte[] by = new byte[stream.available()];
-//		stream.read(by);
-//		stream.close();
-//		return by;
-//	}
+	/**
+	 * 公钥或私钥解密 
+	 * @param data 使用Base64格式的加密后文字
+	 * @param keyStorePath
+	 * @param alias
+	 * @param password
+	 * @return 解密后文字
+	 * @throws Exception
+	 */
+	public static String decrypt(String data, Key key, String transformation) throws Exception {
+		if(data == null) {
+			return null;
+		}
+		byte[] src = Base64.decode(data);
+		byte[] dst = decrypt(src, key, transformation);
+		String result = new String(dst);
+		return result;
+	}
+	
+
+	/**
+	 * 产生RSA密钥对
+	 * @return
+	 * @throws Exception
+	 */
+	public static KeyPair generateRSAKeyPair() throws Exception {
+		KeyPairGenerator kpGen = KeyPairGenerator.getInstance("RSA");
+		kpGen.initialize(1024, new SecureRandom());
+		return kpGen.generateKeyPair();
+	}
+	
+	/**
+	 * 签名
+	 * @param key 私钥
+	 * @param src 原文
+	 * @param algorithm 签名算法(常用：md5withrsa, SHA1withRSA)，为空时默认为：SHA1withRSA
+	 * @return 签名
+	 * @throws NoSuchProviderException 
+	 * @throws NoSuchAlgorithmException 
+	 * @throws InvalidKeyException 
+	 * @throws SignatureException 
+	 * @throws Exception
+	 */
+	public static byte[] sign(final PrivateKey key, byte[] src,
+			final String algorithm) throws NoSuchAlgorithmException,
+			NoSuchProviderException, InvalidKeyException, SignatureException {
+		String algorithm1 = algorithm;
+		if (algorithm1 == null) {
+			algorithm1 = DEFAULT_SIGN_ALGORITHM;
+		}
+		Signature sign = Signature.getInstance(algorithm1,
+				BouncyCastleProvider.PROVIDER_NAME);
+
+		sign.initSign(key);
+		sign.update(src);
+		return sign.sign();
+	}
+	
+	/**
+	 * 签名
+	 * @param key 私钥
+	 * @param src 原文
+	 * @param algorithm 签名算法(常用：md5withrsa, SHA1withRSA)，为空时默认为：SHA1withRSA
+	 * @return 签名 使用base64编码
+	 * @throws UnsupportedEncodingException 
+	 * @throws SignatureException 
+	 * @throws NoSuchProviderException 
+	 * @throws NoSuchAlgorithmException 
+	 * @throws InvalidKeyException 
+	 * @throws Exception
+	 */
+	public static String sign(final PrivateKey key, String src,
+			final String algorithm) throws UnsupportedEncodingException,
+			InvalidKeyException, NoSuchAlgorithmException,
+			NoSuchProviderException, SignatureException {
+		byte[] srcBytes = src.getBytes(DEFAULT_CHARSET_NAME);
+		byte[] resultBytes = sign(key, srcBytes, algorithm);
+		String result = Base64.encode(resultBytes);
+		return result;
+	}
+
+	/**
+	 * 校验签名
+	 * @param key 公钥
+	 * @param crypt 签名
+	 * @param src 原文
+	 * @param algorithm 签名算法(常用：md5withrsa, SHA1withRSA)，为空时默认为：SHA1withRSA
+	 * @return
+	 * @throws NoSuchProviderException 
+	 * @throws NoSuchAlgorithmException 
+	 * @throws SignatureException 
+	 * @throws InvalidKeyException 
+	 * @throws Exception
+	 */
+	public static boolean verifySign(final PublicKey key, byte[] crypt,
+			byte[] src, final String algorithm)
+			throws NoSuchAlgorithmException, NoSuchProviderException,
+			SignatureException, InvalidKeyException {
+		String algorithm1 = algorithm;
+		if (algorithm1 == null) {
+			algorithm1 = DEFAULT_SIGN_ALGORITHM;
+		}
+		Signature sign = Signature.getInstance(algorithm1,
+				BouncyCastleProvider.PROVIDER_NAME);
+		sign.initVerify(key);
+		sign.update(src);
+		return sign.verify(crypt);
+	}
+	
+	/**
+	 * 校验签名
+	 * @param key 公钥
+	 * @param crypt 签名， 以Base64编码
+	 * @param src 原文
+	 * @param algorithm 签名算法(常用：md5withrsa, SHA1withRSA)，为空时默认为：SHA1withRSA
+	 * @return
+	 * @throws SignatureException 
+	 * @throws NoSuchProviderException 
+	 * @throws NoSuchAlgorithmException 
+	 * @throws InvalidKeyException 
+	 * @throws UnsupportedEncodingException 
+	 * @throws Exception
+	 */
+	public static boolean verifySign(final PublicKey key, String crypt,
+			String src, final String algorithm) throws InvalidKeyException,
+			NoSuchAlgorithmException, NoSuchProviderException,
+			SignatureException, UnsupportedEncodingException {
+		byte[] cryptBytes = Base64.decode(crypt);
+		byte[] srcBytes = src.getBytes(DEFAULT_CHARSET_NAME);
+		return verifySign(key, cryptBytes, srcBytes, algorithm);
+	}
+
+
 //
 //	public static byte[] encrypt(Key key, byte[] b, String suan)
 //			throws Exception {
