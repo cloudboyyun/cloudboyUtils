@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="1.0">
- 	<info organisation="com.cloudboy" module="utils"/>
+ 	<info organisation="com.cloudboy" module="cloudboyUtils"/>
 	<configurations>
 			<conf name="default"/>
 			<conf name="compile"/>
@@ -15,7 +15,8 @@
         <dependency org="commons-logging" name="commons-logging" rev="1.2" conf="zip->default"/>
         <dependency org="org.apache" name="commons-lang" rev="2.6" conf="compile->default"/>
         <dependency org="net.sf.javamusictag" name="jid3lib" rev="0.5.4" conf="zip->default"/>
-        <dependency org="org.bouncycastle" name="bcprov-jdk16" rev="1.46"/>
-        <dependency org="com.thoughtworks" name="xstream" rev="1.3" conf="compile->default"/>
+        <dependency org="org.bouncycastle" name="bcprov-jdk16" rev="1.46" conf="zip->default"/>
+        <dependency org="com.thoughtworks.xstream" name="xstream" rev="1.4.7" conf="zip->default"/>
+        <dependency org="xmlpull" name="xmlpull" rev="1.1.3.4d_b4_min" conf="zip->default"/>
 	</dependencies>
 </ivy-module>
