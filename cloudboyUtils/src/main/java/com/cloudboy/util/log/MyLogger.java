@@ -16,10 +16,6 @@ public class MyLogger {
 		return new MyLogger(clazz);
 	}
 	
-	static public MyLogger getLogger() {
-		return new MyLogger(sun.reflect.Reflection.getCallerClass().getClass());
-	}
-	
 	public void info(Object message, Object... args) {
 		String value = buildMessage(message, args);
 		logger.info(value);
