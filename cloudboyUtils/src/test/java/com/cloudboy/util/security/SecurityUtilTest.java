@@ -13,13 +13,12 @@ import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 
+import org.apache.log4j.Logger;
 import org.junit.Test;
-
-import com.cloudboy.util.log.MyLogger;
 
 public class SecurityUtilTest {
 	
-	private static MyLogger logger = MyLogger.getLogger(SecurityUtilTest.class);
+	private static Logger logger = Logger.getLogger(SecurityUtilTest.class);
 	
 	/**
 	 * 验证公私钥加解密
@@ -63,13 +62,13 @@ public class SecurityUtilTest {
 		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
 		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
 		PrivateKey privateKey = (PrivateKey)keyStore.getKey("mbp", "111111".toCharArray());
-		logger.info("key:", privateKey.getClass());
+		logger.info("key:" + privateKey.getClass());
 		Certificate certificate = keyStore.getCertificate("mbp");
 		PublicKey publicKey = certificate.getPublicKey();
 		
 		String word = "我要被签名啦123190820384-1230841-23481-203841775453452";
 		String sign = SecurityUtil.sign(privateKey, word, null);
-		logger.info("sign:", sign);
+		logger.info("sign:" + sign);
 		boolean verify = SecurityUtil.verifySign(publicKey, sign, word, null);
 		assertTrue(verify);
 		
@@ -90,7 +89,7 @@ public class SecurityUtilTest {
 		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
 		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
 		PrivateKey privateKey = (PrivateKey)keyStore.getKey("mbp", "111111".toCharArray());
-		logger.info("key:", privateKey.getClass());
+		logger.info("key:" + privateKey.getClass());
 		Certificate certificate = keyStore.getCertificate("mbp");
 		PublicKey publicKey1 = certificate.getPublicKey();
 		logger.info(Base64.encode(publicKey1.getEncoded()));

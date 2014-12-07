@@ -17,13 +17,12 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Enumeration;
 
+import org.apache.log4j.Logger;
 import org.junit.Test;
-
-import com.cloudboy.util.log.MyLogger;
 
 public class KeyFileUtilTest {
 
-	private static MyLogger logger = MyLogger.getLogger(KeyFileUtilTest.class);
+	private static Logger logger = Logger.getLogger(KeyFileUtilTest.class);
 	
 	/**
 	 * privateKey.pem和publicKey.pem是一对密钥。
@@ -134,7 +133,7 @@ public class KeyFileUtilTest {
 		Enumeration<String> aliases = keyStore.aliases();
 		while(aliases.hasMoreElements()) {
 			String aliase = aliases.nextElement();
-			logger.info("aliase:", aliase);
+			logger.info("aliase:" + aliase);
 		}		
 	}
 	

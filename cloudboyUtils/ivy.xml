@@ -13,10 +13,12 @@
 	<dependencies>
         <dependency org="log4j" name="log4j" rev="1.2.17" conf="zip->default"/>
         <dependency org="commons-logging" name="commons-logging" rev="1.2" conf="zip->default"/>
-        <dependency org="org.apache" name="commons-lang" rev="2.6" conf="compile->default"/>
+        <dependency org="org.apache.commons" name="commons-lang3" rev="3.3.2"/>
         <dependency org="net.sf.javamusictag" name="jid3lib" rev="0.5.4" conf="zip->default"/>
         <dependency org="org.bouncycastle" name="bcprov-jdk16" rev="1.46" conf="zip->default"/>
         <dependency org="com.thoughtworks.xstream" name="xstream" rev="1.4.7" conf="zip->default"/>
         <dependency org="xmlpull" name="xmlpull" rev="1.1.3.4d_b4_min" conf="zip->default"/>
+        <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.3.2" conf="zip->default"/>
+        <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.3.6" conf="zip->default"/>
 	</dependencies>
 </ivy-module>

@@ -25,6 +25,10 @@ public class AppRTException extends RuntimeException {
 		return MessageFormat.format(msg, args);
 	}
 	
+	public AppRTException(String msg) {
+		super(msg);
+	}
+	
 	public AppRTException(String code, String msg) {
 		super(code + ": " + msg);
 		this.code = code;

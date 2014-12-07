@@ -22,11 +22,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
-import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.openssl.PEMWriter;
 import org.bouncycastle.openssl.PasswordFinder;
+
+import com.cloudboy.util.lang.StringUtils;
 
 public class KeyFileUtil {
 	final private static String DEFAULT_KEYSTORE_ALGORITHM = "PKCS12";
@@ -134,7 +135,7 @@ public class KeyFileUtil {
 			storeAlgorithm1 = DEFAULT_KEYSTORE_ALGORITHM;
 		}
 		KeyStore ks = KeyStore.getInstance(storeAlgorithm);
-		String pwd = StringUtils.defaultString(storePassword);
+		String pwd = StringUtils.trimToEmpty(storePassword);
 		ks.load(keyStoreFile, pwd.toCharArray());
 		keyStoreFile.close();
 		return ks;

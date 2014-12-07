@@ -11,7 +11,8 @@ public class AppBizException extends Exception {
 
 	private String textMessage;
 
-	public AppBizException() {
+	public AppBizException(String msg) {
+		super(msg);
 	}
 
 	private static String formatMessage(String msg, Object... args) {
