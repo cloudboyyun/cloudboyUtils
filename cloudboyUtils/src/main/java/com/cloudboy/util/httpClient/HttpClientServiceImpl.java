@@ -31,6 +31,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -42,9 +43,11 @@ import org.apache.log4j.Logger;
 import com.cloudboy.base.AppRTException;
 import com.cloudboy.util.lang.NumberUtils;
 import com.cloudboy.util.lang.StringUtils;
+import com.thoughtworks.xstream.XStream;
 
 public class HttpClientServiceImpl implements HttpClientService {
 	private static Logger logger = Logger.getLogger(HttpClientServiceImpl.class);
+	private static XStream xs = new XStream();
 	private static int DEFAULT_CONNECTION_TIMEOUT = 10 * 1000;
     private static int DEFAULT_SOCKET_TIMEOUT = 10 * 1000;
     
@@ -134,7 +137,7 @@ public class HttpClientServiceImpl implements HttpClientService {
 	 */
 	protected KeyStore getKeyStoreByCrtFile() throws Exception {
 		String keyStoreType = KeyStore.getDefaultType();
-		logger.info("keyStoreType:" + keyStoreType);
+		logger.debug("keyStoreType:" + keyStoreType);
 		KeyStore ks = KeyStore.getInstance(keyStoreType);
 		ks.load(null, null);
 		
@@ -145,7 +148,7 @@ public class HttpClientServiceImpl implements HttpClientService {
 		CertificateFactory cf = CertificateFactory.getInstance("X.509");
 		Certificate cert = cf.generateCertificate(fis);
 		fis.close();
-		logger.info("public key:" + cert.getPublicKey());
+		logger.debug("public key:" + cert.getPublicKey());
 		ks.setCertificateEntry("myServer", cert);
 		return ks;
 	}
@@ -160,7 +163,7 @@ public class HttpClientServiceImpl implements HttpClientService {
 		String password = "0okm,lp-";
 		FileInputStream is = new FileInputStream(keyStorePath);
 		String keyStoreType = KeyStore.getDefaultType();
-		logger.info("keyStoreType:" + keyStoreType);
+		logger.debug("keyStoreType:" + keyStoreType);
 		KeyStore ks = KeyStore.getInstance(keyStoreType);
 		ks.load(is, password.toCharArray());
 		is.close();
@@ -210,11 +213,27 @@ public class HttpClientServiceImpl implements HttpClientService {
 			}
 			
 			CloseableHttpClient httpClient = getHttpClient();
-			CloseableHttpResponse response = httpClient.execute(httpRequest, httpClientContext);			
+			logger.debug("cookies number before invoking the request:" + cookieStore.getCookies().size());
+			CloseableHttpResponse response = httpClient.execute(httpRequest, httpClientContext);
+			logger.debug(response.getStatusLine());
+			logger.debug("status code:" + response.getStatusLine().getStatusCode());
+			int statusCode = response.getStatusLine().getStatusCode();
+			if(statusCode != 200) {
+				throw new AppRTException(response.getStatusLine().toString());
+			}
+			logger.debug("cookies number after invoking the request:" + cookieStore.getCookies().size());
+			for(Cookie cookie : cookieStore.getCookies()) {
+				logger.debug(cookie);
+				logger.debug(xs.toXML(cookie));
+			}
+			
 			HttpEntity entity = response.getEntity();
 			String responseXML = EntityUtils.toString(entity);
 			response.close();
 			return responseXML;
+		} catch(AppRTException e) {
+			logger.error(e);
+			throw e;
 		} catch (Exception e) {
 			logger.error(e);
 			throw new AppRTException(e);
