@@ -9,7 +9,7 @@
 	</configurations>
 	<publications>
 			<artifact ext="jar"/>
-	</publications>
+	</publications> 
 	<dependencies>
         <dependency org="log4j" name="log4j" rev="1.2.17" conf="zip->default"/>
         <dependency org="commons-logging" name="commons-logging" rev="1.2" conf="zip->default"/>

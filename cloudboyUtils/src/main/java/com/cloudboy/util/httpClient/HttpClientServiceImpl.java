@@ -13,11 +13,13 @@ import javax.net.ssl.SSLContext;
 
 import org.apache.http.Consts;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.MessageConstraints;
@@ -30,6 +32,7 @@ import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -42,18 +45,22 @@ import com.cloudboy.util.lang.StringUtils;
 
 public class HttpClientServiceImpl implements HttpClientService {
 	private static Logger logger = Logger.getLogger(HttpClientServiceImpl.class);
-    private static PoolingHttpClientConnectionManager connManager = null;
-    private static RequestConfig defaultRequestConfig = null;
-    private static int DEFAULT_CONNECTION_TIMEOUT = 10 * 1000;
+	private static int DEFAULT_CONNECTION_TIMEOUT = 10 * 1000;
     private static int DEFAULT_SOCKET_TIMEOUT = 10 * 1000;
     
-    static {
-    	System.setProperty("jsse.enableSNIExtension", "false");
-    }
+    private PoolingHttpClientConnectionManager connManager = null;
+    private RequestConfig defaultRequestConfig = null;
+    private HttpClientContext httpClientContext = null;
+    private CookieStore cookieStore = null;
 	
     @PostConstruct
 	public void init() {
 		try {
+			System.setProperty("jsse.enableSNIExtension", "false");
+			cookieStore = new BasicCookieStore();
+			httpClientContext = HttpClientContext.create();
+			httpClientContext.setCookieStore(cookieStore);
+			
 			KeyStore trustStore = null;
 			KeyStore configuredKeyStore = getConfiguredKeyStore();
 			X509HostnameVerifier x509HostnameVerifier = null;
@@ -75,7 +82,6 @@ public class HttpClientServiceImpl implements HttpClientService {
 			}
 			SSLContext sslcontext = sslContextBuilder.build();
 			// Allow TLSv1 protocol only
-
 			SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
 					sslcontext, new String[] { "TLSv1" }, null,
 					x509HostnameVerifier);
@@ -172,6 +178,11 @@ public class HttpClientServiceImpl implements HttpClientService {
             throw new RuntimeException(e);
         }
     }
+	
+	@Override
+	public String postXML(String url, String xml) {
+		return postXML(url, xml, null, null, null);
+	}
     
 	@Override
 	public String postXML(String url, String xml, String reqEncoding, Integer connectionTimeout, Integer readTimeout) {
@@ -183,8 +194,10 @@ public class HttpClientServiceImpl implements HttpClientService {
 			URIBuilder uriBuilder = new URIBuilder(url);
 			URI uri = uriBuilder.build();
 			HttpPost httpRequest = new HttpPost(uri);
-			
-			StringEntity reqEntity = new StringEntity(xml, reqEncoding);  // Consts.UTF_8
+			if(reqEncoding == null) {
+				reqEncoding = Consts.UTF_8.toString();
+			}
+			StringEntity reqEntity = new StringEntity(xml, reqEncoding);
 			reqEntity.setContentType("text/xml;charset=UTF-8");
 			reqEntity.setChunked(true);
 			httpRequest.setEntity(reqEntity);
@@ -197,9 +210,8 @@ public class HttpClientServiceImpl implements HttpClientService {
 			}
 			
 			CloseableHttpClient httpClient = getHttpClient();
-			CloseableHttpResponse response = httpClient.execute(httpRequest);
+			CloseableHttpResponse response = httpClient.execute(httpRequest, httpClientContext);			
 			HttpEntity entity = response.getEntity();
-			logger.info(entity.getContentType());
 			String responseXML = EntityUtils.toString(entity);
 			response.close();
 			return responseXML;
