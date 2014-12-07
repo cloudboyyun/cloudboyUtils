@@ -2,6 +2,7 @@ package com.cloudboy.util.security;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -127,9 +128,9 @@ public class KeyFileUtilTest {
 	 * @throws IOException
 	 */
 	@Test
-	public void getKeyStore() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
+	public void getKeyStore() throws Exception {
 		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
-		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
+		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, KeyFileUtil.KEYSTORE_TYPE_PKCS12, "111111");
 		Enumeration<String> aliases = keyStore.aliases();
 		while(aliases.hasMoreElements()) {
 			String aliase = aliases.nextElement();
@@ -146,10 +147,12 @@ public class KeyFileUtilTest {
 		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
 		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
 		Certificate certificate = keyStore.getCertificate("mbp");
-		String certFile = "d:\\temp\\mbp.crt";
+		String certFile = "d:\\temp\\test.crt";
 		KeyFileUtil.saveCertificate(certificate, certFile);
 		
-		Certificate certificate2 = KeyFileUtil.loadCertificate(certFile);
+		File file = new File(certFile);
+		FileInputStream in = new FileInputStream(file);
+		Certificate certificate2 = KeyFileUtil.loadCertificate(in);
 		// 输出后的证书再次读取进来，两个证书应该一样
 		assertTrue(certificate.equals(certificate2));
 	}

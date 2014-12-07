@@ -1,11 +1,8 @@
 package com.cloudboy.util.httpClient;
 
-import java.io.FileInputStream;
 import java.net.URI;
 import java.nio.charset.CodingErrorAction;
 import java.security.KeyStore;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
 import java.util.Arrays;
 
 import javax.annotation.PostConstruct;
@@ -55,6 +52,14 @@ public class HttpClientServiceImpl implements HttpClientService {
     private RequestConfig defaultRequestConfig = null;
     private HttpClientContext httpClientContext = null;
     private CookieStore cookieStore = null;
+    private KeyStore configuredKeyStore = null;
+    
+    public HttpClientServiceImpl() {
+    }
+    
+    public HttpClientServiceImpl(KeyStore configuredKeyStore) {
+    	this.configuredKeyStore = configuredKeyStore;
+    }
 	
     @PostConstruct
 	public void init() {
@@ -65,7 +70,6 @@ public class HttpClientServiceImpl implements HttpClientService {
 			httpClientContext.setCookieStore(cookieStore);
 			
 			KeyStore trustStore = null;
-			KeyStore configuredKeyStore = getConfiguredKeyStore();
 			X509HostnameVerifier x509HostnameVerifier = null;
 			if (configuredKeyStore == null) {
 				trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -88,9 +92,7 @@ public class HttpClientServiceImpl implements HttpClientService {
 			SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
 					sslcontext, new String[] { "TLSv1" }, null,
 					x509HostnameVerifier);
-			// Create a registry of custom connection socket factories for
-			// supported
-			// protocol schemes.
+			// Create a registry of custom connection socket factories for supported protocol schemes.
 			Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder
 					.<ConnectionSocketFactory> create()
 					.register("http", PlainConnectionSocketFactory.INSTANCE)
@@ -126,50 +128,6 @@ public class HttpClientServiceImpl implements HttpClientService {
 		}
     }
     
-    private KeyStore getConfiguredKeyStore() {
-    	return null;
-    }
-    
-    /**
-	 * 当我们有crt证书文件时，采用这个方法初始化KeyStore
-	 * @return
-	 * @throws Exception
-	 */
-	protected KeyStore getKeyStoreByCrtFile() throws Exception {
-		String keyStoreType = KeyStore.getDefaultType();
-		logger.debug("keyStoreType:" + keyStoreType);
-		KeyStore ks = KeyStore.getInstance(keyStoreType);
-		ks.load(null, null);
-		
-		// 读取crt证书文件(这里使用ca.crt或者server.crt都行)
-		String certificationPath = "D:\\doc\\key\\server.crt";
-//		String certificationPath = "D:\\doc\\key\\ca.crt";
-		FileInputStream fis = new FileInputStream(certificationPath);
-		CertificateFactory cf = CertificateFactory.getInstance("X.509");
-		Certificate cert = cf.generateCertificate(fis);
-		fis.close();
-		logger.debug("public key:" + cert.getPublicKey());
-		ks.setCertificateEntry("myServer", cert);
-		return ks;
-	}
-	
-	/**
-	 * 当我们已经把证书导入java的密钥库文件时（使用keytool命令）， 使用这个方法初始化KeyStore
-	 * @return
-	 * @throws Exception
-	 */
-	protected KeyStore getKeyStoreByJKSFile() throws Exception {
-		String keyStorePath = "D:\\doc\\key\\server.jks";
-		String password = "0okm,lp-";
-		FileInputStream is = new FileInputStream(keyStorePath);
-		String keyStoreType = KeyStore.getDefaultType();
-		logger.debug("keyStoreType:" + keyStoreType);
-		KeyStore ks = KeyStore.getInstance(keyStoreType);
-		ks.load(is, password.toCharArray());
-		is.close();
-		return ks;
-	}
-	
 	private CloseableHttpClient getHttpClient() {
         try {
         	CloseableHttpClient httpClient = HttpClients.custom()
@@ -239,5 +197,4 @@ public class HttpClientServiceImpl implements HttpClientService {
 			throw new AppRTException(e);
 		}
 	}
-
 }

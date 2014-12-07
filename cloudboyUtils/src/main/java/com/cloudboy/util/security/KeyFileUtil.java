@@ -1,6 +1,5 @@
 package com.cloudboy.util.security;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -10,15 +9,12 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.KeyPair;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
@@ -30,7 +26,10 @@ import org.bouncycastle.openssl.PasswordFinder;
 import com.cloudboy.util.lang.StringUtils;
 
 public class KeyFileUtil {
-	final private static String DEFAULT_KEYSTORE_ALGORITHM = "PKCS12";
+	final private static String DEFAULT_KEYSTORE_TYPE = "PKCS12";
+	final public static String KEYSTORE_TYPE_JKS = "jks";
+	final public static String KEYSTORE_TYPE_PKCS12 = "PKCS12";
+	
 	static {
 		Security.addProvider(new BouncyCastleProvider());
 	}
@@ -117,27 +116,37 @@ public class KeyFileUtil {
 	}
 	
 	/**
-	 * 从KeyStore文件中生成KeyStore对象
-	 * @param storeAlgorithm keyStore算法。为空默认为：PKCS12格式
-	 * @param path keyStore文件路径
+	 * 从PKCS12格式文件(*.pfx)中生成KeyStore对象
+	 * @param keyStoreFile
+	 * @param type keyStore的类型，jks, PKCS12。为空默认为：jks格式
 	 * @param storePassword KeyStore密码
 	 * @return
-	 * @throws KeyStoreException
-	 * @throws NoSuchAlgorithmException
-	 * @throws CertificateException
-	 * @throws IOException
+	 * @throws Exception
 	 */
-	public static KeyStore getKeyStore(final InputStream keyStoreFile, final String storeAlgorithm, 
-			final String storePassword) throws KeyStoreException,
-			NoSuchAlgorithmException, CertificateException, IOException {
-		String storeAlgorithm1 = storeAlgorithm;
-		if(storeAlgorithm1 == null) {
-			storeAlgorithm1 = DEFAULT_KEYSTORE_ALGORITHM;
+	public static KeyStore getKeyStore(final InputStream keyStoreFile, String type, 
+			final String storePassword) throws Exception {
+		if(type == null) {
+			type = DEFAULT_KEYSTORE_TYPE;
 		}
-		KeyStore ks = KeyStore.getInstance(storeAlgorithm);
+		KeyStore ks = KeyStore.getInstance(type);
 		String pwd = StringUtils.trimToEmpty(storePassword);
 		ks.load(keyStoreFile, pwd.toCharArray());
 		keyStoreFile.close();
+		return ks;
+	}
+	
+	/**
+	 * 以X.509格式的证书文件(*.crt)，初始化一个KeyStore
+	 * @param certFile X.509格式的证书文件(*.crt)
+	 * @return
+	 * @throws Exception
+	 */
+	public static KeyStore getKeyStoreByCrtFile(InputStream certFile) throws Exception {
+		String keyStoreType = KeyStore.getDefaultType();
+		KeyStore ks = KeyStore.getInstance(keyStoreType);
+		ks.load(null, null);
+		Certificate cert = loadCertificate(certFile);
+		ks.setCertificateEntry("myServer", cert);
 		return ks;
 	}
 	
@@ -158,16 +167,15 @@ public class KeyFileUtil {
 	
 	/**
 	 * 读取证书
-	 * @param certPath
+	 * @param certPath X.509格式的证书文件流
 	 * @return
 	 * @throws Exception
 	 */
-	public static X509Certificate loadCertificate(String certPath)
+	public static X509Certificate loadCertificate(InputStream certFile)
 			throws Exception {
 		CertificateFactory factory = CertificateFactory.getInstance("X.509");
-		FileInputStream inputStream = new FileInputStream(certPath);
 		X509Certificate certificate = (X509Certificate) factory
-				.generateCertificate(inputStream);
+				.generateCertificate(certFile);
 		return certificate;
 	}
 }
