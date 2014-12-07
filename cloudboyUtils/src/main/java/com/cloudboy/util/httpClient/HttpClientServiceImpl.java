@@ -46,6 +46,10 @@ public class HttpClientServiceImpl implements HttpClientService {
     private static RequestConfig defaultRequestConfig = null;
     private static int DEFAULT_CONNECTION_TIMEOUT = 10 * 1000;
     private static int DEFAULT_SOCKET_TIMEOUT = 10 * 1000;
+    
+    static {
+    	System.setProperty("jsse.enableSNIExtension", "false");
+    }
 	
     @PostConstruct
 	public void init() {
