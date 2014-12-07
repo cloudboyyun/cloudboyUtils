@@ -1,11 +1,22 @@
 package com.cloudboy.util.httpClient;
 
+/**
+ * 
+ * @author cloudboy(yun.xia)
+ *
+ */
 public interface HttpClientService {
 	
+	/**
+	 * post XML-format request
+	 * @param url
+	 * @param xml
+	 * @return
+	 */
 	public String postXML(String url, String xml);
 	
 	/**
-	 * Send the request message in XML format by post method
+	 * post XML-format request
 	 * @param url
 	 * @param xml
 	 * @param reqEncoding
