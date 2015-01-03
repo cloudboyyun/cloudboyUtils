@@ -157,6 +157,21 @@ public class KeyUtil {
 	}
 	
 	/**
+	 * 以X.509格式的证书文件(*.crt)，初始化一个KeyStore
+	 * @param certFile X.509格式的证书文件(*.crt)
+	 * @return
+	 * @throws Exception
+	 */
+	public static KeyStore getKeyStoreFromCrtStream(InputStream certFile) throws Exception {
+		String keyStoreType = KeyStore.getDefaultType();
+		KeyStore ks = KeyStore.getInstance(keyStoreType);
+		ks.load(null, null);
+		Certificate cert = loadCertificate(certFile);
+		ks.setCertificateEntry("myServer", cert);
+		return ks;
+	}
+	
+	/**
 	 * 导出证书
 	 * @param certificate
 	 * @param certPath
