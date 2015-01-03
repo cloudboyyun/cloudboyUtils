@@ -1,5 +1,7 @@
 package com.cloudboy.util.security;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -7,8 +9,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -17,6 +24,9 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMReader;
@@ -25,7 +35,7 @@ import org.bouncycastle.openssl.PasswordFinder;
 
 import com.cloudboy.util.lang.StringUtils;
 
-public class KeyFileUtil {
+public class KeyUtil {
 	final private static String DEFAULT_KEYSTORE_TYPE = "PKCS12";
 	final public static String KEYSTORE_TYPE_JKS = "jks";
 	final public static String KEYSTORE_TYPE_PKCS12 = "PKCS12";
@@ -35,14 +45,25 @@ public class KeyFileUtil {
 	}
 	
 	/**
-	 * 从PEM格式的私钥密钥文件中获取密钥对
+	 * 生成RSA算法的一对密钥
+	 * @return
+	 * @throws NoSuchAlgorithmException
+	 */
+	public static KeyPair generateRSAKeyPair() throws NoSuchAlgorithmException {
+		KeyPairGenerator kpGen = KeyPairGenerator.getInstance("RSA");
+		kpGen.initialize(1024, new SecureRandom());
+		return kpGen.generateKeyPair();
+	}
+	
+	/**
+	 * 从PEM格式的私钥密钥流中获取密钥对
 	 * @param in 私钥密钥文件
 	 * @param rootMiyuePwd 密码
 	 * @return 私钥可以推导出公钥，所以返回的是包含私钥和公钥的密钥对
 	 * @throws IOException 
 	 * @throws Exception
 	 */
-	public static KeyPair getPrivateKeyFromPemFormatFile(final InputStream pemFile,
+	public static KeyPair getPrivateKeyFromPemFormatStream(final InputStream pemFile,
 			final String password) throws IOException {
 		PEMReader reader = new PEMReader(new InputStreamReader(pemFile), new PasswordFinder() {
 			public char[] getPassword() {
@@ -60,14 +81,14 @@ public class KeyFileUtil {
 	}
 	
 	/**
-	 * 把私钥保存为PEM格式文件
+	 * 把私钥保存为PEM格式
 	 * @param key 私钥
 	 * @param password 密码 
 	 * @param pemFilePath 输出的pem文件全路径
 	 * @throws IOException
 	 */
-	public static void savePEM(final PrivateKey key, final String password,	OutputStream pemFileOutputStream) throws IOException {
-		PEMWriter writer = new PEMWriter(new OutputStreamWriter(pemFileOutputStream));
+	public static void savePEM(final PrivateKey key, final String password,	OutputStream pemOutputStream) throws IOException {
+		PEMWriter writer = new PEMWriter(new OutputStreamWriter(pemOutputStream));
 		if(password == null) {
 			writer.writeObject(key);
 		} else {
@@ -90,7 +111,7 @@ public class KeyFileUtil {
 	}
 	
 	/**
-	 * 从PEM格式的公钥密钥文件中获取公钥.
+	 * 从PEM格式的公钥密钥流中获取公钥.
 	 * 通常公钥不会存储为PEM格式，而是存储在证书(crt格式)里。但使用本类的savePEM方法，也能把公钥保存为PEM格式。
 	 * @param in 公钥密钥文件
 	 * @param password 密码
@@ -98,7 +119,7 @@ public class KeyFileUtil {
 	 * @throws IOException 
 	 * @throws Exception
 	 */
-	public static PublicKey getPublicKeyFromPemFormatFile(final InputStream pemFile,
+	public static PublicKey getPublicKeyFromPemFormatStream(final InputStream pemFile,
 			final String password) throws IOException  {
 		PEMReader reader = new PEMReader(new InputStreamReader(pemFile), new PasswordFinder() {
 			public char[] getPassword() {
@@ -136,21 +157,6 @@ public class KeyFileUtil {
 	}
 	
 	/**
-	 * 以X.509格式的证书文件(*.crt)，初始化一个KeyStore
-	 * @param certFile X.509格式的证书文件(*.crt)
-	 * @return
-	 * @throws Exception
-	 */
-	public static KeyStore getKeyStoreByCrtFile(InputStream certFile) throws Exception {
-		String keyStoreType = KeyStore.getDefaultType();
-		KeyStore ks = KeyStore.getInstance(keyStoreType);
-		ks.load(null, null);
-		Certificate cert = loadCertificate(certFile);
-		ks.setCertificateEntry("myServer", cert);
-		return ks;
-	}
-	
-	/**
 	 * 导出证书
 	 * @param certificate
 	 * @param certPath
@@ -177,5 +183,70 @@ public class KeyFileUtil {
 		X509Certificate certificate = (X509Certificate) factory
 				.generateCertificate(certFile);
 		return certificate;
+	}
+	
+	/**
+	 * 使用私钥生成公钥<br>
+	 * 在JDK库中找不到现成方法，只好用这个土方法。
+	 * @param privateKey
+	 * @param password
+	 * @return
+	 * @throws IOException
+	 */
+	public static PublicKey generatePublicKey(PrivateKey privateKey, String password) throws IOException {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		KeyUtil.savePEM(privateKey, password, outputStream);
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+		KeyPair keyPair = KeyUtil.getPrivateKeyFromPemFormatStream(inputStream, password);
+		return keyPair.getPublic();
+	}
+	
+	/**
+	 * 将public key使用base64编码
+	 * @param publicKey
+	 * @return
+	 */
+	public static String convertKey2String(Key key) {
+		byte[] publicKeyBytes = key.getEncoded();
+		String publicKeyStr = Base64.encode(publicKeyBytes);
+		return publicKeyStr;
+	}
+	
+	/**
+	 * 将Base64编码的公钥字符串转换为PublicKey对象
+	 * @param publicKeyStr
+	 * @return
+	 * @throws InvalidKeyException
+	 * @throws NoSuchAlgorithmException 
+	 * @throws InvalidKeySpecException 
+	 */
+	public static PublicKey convert2PublicKey(String publicKeyStr, String algorithm) throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException {
+		byte[] publicKeyBytes = Base64.decode(publicKeyStr);
+		X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+		if(algorithm == null) {
+			algorithm = "RSA";
+		}
+		KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
+		PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
+		return publicKey;
+	}
+	
+	/**
+	 * 将Base64编码的公钥字符串转换为PublicKey对象
+	 * @param publicKeyStr
+	 * @return
+	 * @throws InvalidKeyException
+	 * @throws NoSuchAlgorithmException 
+	 * @throws InvalidKeySpecException 
+	 */
+	public static PrivateKey convert2PrivateKey(String PrivateKeyStr, String algorithm) throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException {
+		byte[] privateKeyBytes = Base64.decode(PrivateKeyStr);
+		PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+		if(algorithm == null) {
+			algorithm = "RSA";
+		}
+		KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
+		PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
+		return privateKey;
 	}
 }

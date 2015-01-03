@@ -1,18 +1,12 @@
 package com.cloudboy.util.security;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
@@ -105,18 +99,6 @@ public class SecurityUtil {
 		byte[] dst = decrypt(src, key, transformation);
 		String result = new String(dst, DEFAULT_CHARSET_NAME);
 		return result;
-	}
-	
-
-	/**
-	 * 产生RSA密钥对
-	 * @return
-	 * @throws Exception
-	 */
-	public static KeyPair generateRSAKeyPair() throws Exception {
-		KeyPairGenerator kpGen = KeyPairGenerator.getInstance("RSA");
-		kpGen.initialize(1024, new SecureRandom());
-		return kpGen.generateKeyPair();
 	}
 	
 	/**
@@ -218,21 +200,5 @@ public class SecurityUtil {
 		byte[] cryptBytes = Base64.decode(crypt);
 		byte[] srcBytes = src.getBytes(DEFAULT_CHARSET_NAME);
 		return verifySign(key, cryptBytes, srcBytes, algorithm);
-	}
-	
-	/**
-	 * 使用私钥生成公钥<br>
-	 * 在JDK库中找不到现成方法，只好用这个土方法。
-	 * @param privateKey
-	 * @param password
-	 * @return
-	 * @throws IOException
-	 */
-	public static PublicKey generatePublicKey(PrivateKey privateKey, String password) throws IOException {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		KeyFileUtil.savePEM(privateKey, password, outputStream);
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-		KeyPair keyPair = KeyFileUtil.getPrivateKeyFromPemFormatFile(inputStream, password);
-		return keyPair.getPublic();
 	}
 }

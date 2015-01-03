@@ -28,7 +28,7 @@ public class SecurityUtilTest {
 	public void encrypt() throws Exception {
 		InputStream privateKeyFile = SecurityUtil.class.getResourceAsStream("/privateKey.pem");
 		String password = null;
-		KeyPair keyPair = KeyFileUtil.getPrivateKeyFromPemFormatFile(privateKeyFile, password);
+		KeyPair keyPair = KeyUtil.getPrivateKeyFromPemFormatStream(privateKeyFile, password);
 		PrivateKey privateKey = keyPair.getPrivate();
 		PublicKey publicKey = keyPair.getPublic();
 		
@@ -59,8 +59,8 @@ public class SecurityUtilTest {
 	 */
 	@Test
 	public void signAndVerifySign() throws Exception {
-		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
-		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
+		InputStream keyStoreFile = KeyUtilTest.class.getResourceAsStream("/test.pfx");
+		KeyStore keyStore = KeyUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
 		PrivateKey privateKey = (PrivateKey)keyStore.getKey("mbp", "111111".toCharArray());
 		logger.info("key:" + privateKey.getClass());
 		Certificate certificate = keyStore.getCertificate("mbp");
@@ -72,30 +72,8 @@ public class SecurityUtilTest {
 		boolean verify = SecurityUtil.verifySign(publicKey, sign, word, null);
 		assertTrue(verify);
 		
-		PublicKey publicKey2 = SecurityUtil.generatePublicKey(privateKey, "111111");
+		PublicKey publicKey2 = KeyUtil.generatePublicKey(privateKey, "111111");
 		boolean verify2 = SecurityUtil.verifySign(publicKey2, sign, word, null);
 		assertTrue(verify2);
-	}
-	
-	@Test
-	public void generateRSAKeyPair() throws Exception {
-		KeyPair keyPair = SecurityUtil.generateRSAKeyPair();
-		logger.info(keyPair.getPrivate());
-		logger.info(keyPair.getPublic());
-	}
-	
-	@Test
-	public void generatePublicKey() throws Exception {
-		InputStream keyStoreFile = KeyFileUtilTest.class.getResourceAsStream("/test.pfx");
-		KeyStore keyStore = KeyFileUtil.getKeyStore(keyStoreFile, "PKCS12", "111111");
-		PrivateKey privateKey = (PrivateKey)keyStore.getKey("mbp", "111111".toCharArray());
-		logger.info("key:" + privateKey.getClass());
-		Certificate certificate = keyStore.getCertificate("mbp");
-		PublicKey publicKey1 = certificate.getPublicKey();
-		logger.info(Base64.encode(publicKey1.getEncoded()));
-		
-		PublicKey publicKey2 = SecurityUtil.generatePublicKey(privateKey, "111111");
-		logger.info(Base64.encode(publicKey2.getEncoded()));
-		assertTrue(publicKey1.equals(publicKey2));
 	}
 }
