@@ -1,5 +1,6 @@
 package com.cloudboy.util.security;
 
+import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -41,7 +42,32 @@ public class SecurityUtil {
 			cipher = Cipher.getInstance(transformation, BouncyCastleProvider.PROVIDER_NAME);
 		}
 		cipher.init(Cipher.ENCRYPT_MODE, key);
-		return cipher.doFinal(data);
+		
+		// 获得加密块大小，如:加密前数据为128个byte，而key_size=1024
+		// 加密块大小为127byte,加密后为128个byte;
+		// 因此共有2个加密块，第一个127 byte第二个为1个byte
+		int blockSize = cipher.getBlockSize();
+		int outputSize = cipher.getOutputSize(data.length); // 获得加密块加密后块大小
+		int leavedSize = data.length % blockSize;
+		int blocksSize = (leavedSize != 0 ? data.length / blockSize + 1
+				: data.length / blockSize);
+		byte[] raw = new byte[outputSize * blocksSize];
+		int i = 0;
+		while (data.length - i * blockSize > 0) {
+			// 这里面doUpdate方法不可用，查看源代码后发现每次doUpdate后并没有什么实际动作除了把byte[]放到ByteArrayOutputStream中
+			// 而最后doFinal的时候才将所有的byte[]进行加密，可是到了此时加密块大小很可能已经超出了OutputSize所以只好用dofinal方法。
+			if (data.length - i * blockSize > blockSize) {
+				cipher.doFinal(data, i * blockSize, blockSize, raw, i
+						* outputSize);
+
+			} else {
+				cipher.doFinal(data, i * blockSize, data.length - i
+						* blockSize, raw, i * outputSize);
+			}
+
+			i++;
+		}
+		return raw;
 	}
 	
 	/**
@@ -79,7 +105,15 @@ public class SecurityUtil {
 			cipher = Cipher.getInstance(transformation, BouncyCastleProvider.PROVIDER_NAME);
 		}
 		cipher.init(Cipher.DECRYPT_MODE, key);
-		return cipher.doFinal(data);
+		
+		int blockSize = cipher.getBlockSize();
+		ByteArrayOutputStream bout = new ByteArrayOutputStream(64);
+		int j = 0;
+		while (data.length - j * blockSize > 0) {
+			bout.write(cipher.doFinal(data, j * blockSize, blockSize));
+			j++;
+		}
+		return bout.toByteArray();
 	}
 	
 	/**

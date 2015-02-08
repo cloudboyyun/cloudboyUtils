@@ -76,4 +76,22 @@ public class SecurityUtilTest {
 		boolean verify2 = SecurityUtil.verifySign(publicKey2, sign, word, null);
 		assertTrue(verify2);
 	}
+	
+	@Test
+	public void encryptAndDecrypt() throws Exception {
+		String data = "我要加密";
+		for(int i=0; i<50; i++) {
+			data = data + "1234567890";
+		}
+		logger.info(data);
+		String transformation = "RSA/ECB/PKCS1Padding";
+		KeyPair keyPair = KeyUtil.generateRSAKeyPair();
+		PublicKey publicKey = keyPair.getPublic();
+		PrivateKey privateKey = keyPair.getPrivate();
+		
+		String encryptedData = SecurityUtil.encrypt(data, publicKey, transformation);
+		String decryptedData = SecurityUtil.decrypt(encryptedData, privateKey, transformation);
+		logger.info(decryptedData);
+		assertTrue(data.equals(decryptedData));
+	}
 }
