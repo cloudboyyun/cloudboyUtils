@@ -13,6 +13,7 @@ public class AppBizException extends Exception {
 
 	public AppBizException(String msg) {
 		super(msg);
+		this.textMessage = msg;
 	}
 
 	private static String formatMessage(String msg, Object... args) {
@@ -22,23 +23,27 @@ public class AppBizException extends Exception {
 	public AppBizException(String code, String msg) {
 		super(code + ": " + msg);
 		this.code = code;
+		this.textMessage = msg;
 	}
 	
 	public AppBizException(String code, String msg, Object... args) {
 		super(code + ": " + formatMessage(msg, args));
 		this.code = code;
 		this.args = args;
+		this.textMessage = msg;
 	}
 
 	public AppBizException(String code, String msg, Throwable cause) {
 		super(code + ": " + msg, cause);
 		this.code = code;
+		this.textMessage = msg;
 	}
 
 	public AppBizException(String code, String msg, Object[] args, Throwable cause) {
 		super(code + ": " + formatMessage(msg, args), cause);
 		this.code = code;
 		this.args = args;
+		this.textMessage = msg;
 	}
 
 	public AppBizException(Throwable cause) {
@@ -63,9 +68,5 @@ public class AppBizException extends Exception {
 
 	public String getTextMessage() {
 		return textMessage;
-	}
-
-	public void setTextMessage(String textMessage) {
-		this.textMessage = textMessage;
 	}
 }
