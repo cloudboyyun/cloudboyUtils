@@ -27,28 +27,33 @@ public class AppRTException extends RuntimeException {
 	
 	public AppRTException(String msg) {
 		super(msg);
+		this.textMessage = msg;
 	}
 	
 	public AppRTException(String code, String msg) {
 		super(code + ": " + msg);
 		this.code = code;
+		this.textMessage = msg;
 	}
 
 	public AppRTException(String code, String msg, Throwable cause) {
 		super(code + ": " + msg, cause);
 		this.code = code;
+		this.textMessage = msg;
 	}
 
 	public AppRTException(String code, Object[] args, String msg) {
 		super(code + ": " + formatMessage(msg, args));
 		this.code = code;
 		this.args = args;
+		this.textMessage = msg;
 	}
 
 	public AppRTException(String code, Object[] args, String msg, Throwable cause) {
 		super(code + ": " + formatMessage(msg, args), cause);
 		this.code = code;
 		this.args = args;
+		this.textMessage = msg;
 	}
 
 	public AppRTException(Throwable cause) {
@@ -74,9 +79,4 @@ public class AppRTException extends RuntimeException {
 	public String getTextMessage() {
 		return textMessage;
 	}
-
-	public void setTextMessage(String textMessage) {
-		this.textMessage = textMessage;
-	}
-
 }
