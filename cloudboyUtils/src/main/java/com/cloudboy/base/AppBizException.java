@@ -10,6 +10,7 @@ public class AppBizException extends Exception {
 	private Object[] args;
 
 	private String textMessage;
+	
 
 	public AppBizException(String msg) {
 		super(msg);
