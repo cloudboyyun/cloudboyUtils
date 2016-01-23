@@ -1,20 +1,29 @@
 package com.cloudboy.util.httpClient;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.CodingErrorAction;
 import java.security.KeyStore;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.Consts;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import org.apache.http.ParseException;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
@@ -34,6 +43,7 @@ import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 
@@ -196,5 +206,133 @@ public class HttpClientServiceImpl implements HttpClientService {
 			logger.error(e);
 			throw new AppRTException(e);
 		}
+	}
+	
+	@Override
+	public String post(String url, Map<String, String> params) {
+		return post(url, params, null, null, null);
+	}
+	
+	private String post(String url, Map<String, String> params, String reqEncoding, Integer connectionTimeout, Integer readTimeout) {
+		if(StringUtils.isEmpty(url)) {
+			throw new IllegalArgumentException("The url can not be blank.");
+		}
+		
+		try {
+			URIBuilder uriBuilder = new URIBuilder(url);
+			if(params != null) {
+				for(String key : params.keySet()) {
+					uriBuilder.addParameter(key, params.get(key));
+				}
+			}
+			
+			URI uri = uriBuilder.build();
+			HttpPost httpRequest = new HttpPost(uri);
+			if(params != null) {
+				List<NameValuePair> nvps = new ArrayList<NameValuePair>();
+				for(String key : params.keySet()) {
+					nvps.add(new BasicNameValuePair(key, params.get(key)));
+				}
+				httpRequest.setEntity(new UrlEncodedFormEntity(nvps));
+			}
+			
+			if(reqEncoding == null) {
+				reqEncoding = Consts.UTF_8.toString();
+			}
+			if(connectionTimeout != null || readTimeout != null) {
+				RequestConfig requestConfig = RequestConfig.custom()
+				        .setSocketTimeout(NumberUtils.defaultValue(connectionTimeout, DEFAULT_CONNECTION_TIMEOUT))
+				        .setConnectTimeout(NumberUtils.defaultValue(connectionTimeout, DEFAULT_SOCKET_TIMEOUT))
+				        .build();
+				httpRequest.setConfig(requestConfig);
+			}
+			
+			CloseableHttpClient httpClient = getHttpClient();
+			logger.debug("cookies number before invoking the request:" + cookieStore.getCookies().size());
+			CloseableHttpResponse response = httpClient.execute(httpRequest, httpClientContext);
+			return dealResponse(response, httpClient);
+		} catch(AppRTException e) {
+			logger.error(e);
+			throw e;
+		} catch (Exception e) {
+			logger.error(e);
+			throw new AppRTException(e);
+		}
+	}
+	
+	private String postMultiple(String url, Map<String, String> params, String reqEncoding, Integer connectionTimeout, Integer readTimeout) {
+		if(StringUtils.isEmpty(url)) {
+			throw new IllegalArgumentException("The url can not be blank.");
+		}
+		
+		try {
+			URIBuilder uriBuilder = new URIBuilder(url);
+			if(params != null) {
+				for(String key : params.keySet()) {
+					uriBuilder.addParameter(key, params.get(key));
+				}
+			}
+			
+			URI uri = uriBuilder.build();
+			HttpPost httpRequest = new HttpPost(uri);
+			if(params != null) {
+				List<NameValuePair> nvps = new ArrayList<NameValuePair>();
+				for(String key : params.keySet()) {
+					nvps.add(new BasicNameValuePair(key, params.get(key)));
+				}
+				httpRequest.setEntity(new UrlEncodedFormEntity(nvps));
+			}
+			
+			if(reqEncoding == null) {
+				reqEncoding = Consts.UTF_8.toString();
+			}
+			if(connectionTimeout != null || readTimeout != null) {
+				RequestConfig requestConfig = RequestConfig.custom()
+				        .setSocketTimeout(NumberUtils.defaultValue(connectionTimeout, DEFAULT_CONNECTION_TIMEOUT))
+				        .setConnectTimeout(NumberUtils.defaultValue(connectionTimeout, DEFAULT_SOCKET_TIMEOUT))
+				        .build();
+				httpRequest.setConfig(requestConfig);
+			}
+			
+			CloseableHttpClient httpClient = getHttpClient();
+			logger.debug("cookies number before invoking the request:" + cookieStore.getCookies().size());
+			CloseableHttpResponse response = httpClient.execute(httpRequest, httpClientContext);
+			return dealResponse(response, httpClient);
+		} catch(AppRTException e) {
+			logger.error(e);
+			throw e;
+		} catch (Exception e) {
+			logger.error(e);
+			throw new AppRTException(e);
+		}
+	}
+	
+	private String dealResponse(CloseableHttpResponse response, CloseableHttpClient httpClient) throws ParseException, IOException {
+		logger.debug("status line: " + response.getStatusLine());
+		logger.debug("--------------------------------------");
+		logger.debug("cookies number after invoking the request:" + cookieStore.getCookies().size());
+		for(Cookie cookie : cookieStore.getCookies()) {
+			logger.debug(cookie);
+			logger.debug(xs.toXML(cookie));
+		}
+		logger.debug("--------------------------------------");
+		for(Header header : response.getAllHeaders()) {
+			logger.debug(header.getName() + " : " + header.getValue());
+		}
+		logger.debug("--------------------------------------");
+		int statusCode = response.getStatusLine().getStatusCode();
+		if(statusCode>=200 && statusCode<300) {
+			HttpEntity entity = response.getEntity();
+			String responseStr = EntityUtils.toString(entity);
+			response.close();
+			return responseStr;
+		} else if(statusCode == 302) {
+			Header newUri = response.getFirstHeader("location");
+			HttpGet redirectRequest = new HttpGet(newUri.getValue());
+			CloseableHttpResponse redirectResponse = httpClient.execute(redirectRequest);
+			return dealResponse(redirectResponse, httpClient);
+		} else {
+			throw new AppRTException(response.getStatusLine().toString());
+		}		
 	}
 }

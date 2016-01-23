@@ -1,5 +1,7 @@
 package com.cloudboy.util.httpClient;
 
+import java.util.Map;
+
 /**
  * 
  * @author cloudboy(yun.xia)
@@ -25,4 +27,6 @@ public interface HttpClientService {
 	 * @return
 	 */
 	public String postXML(String url, String xml, String reqEncoding, Integer connectionTimeout, Integer readTimeout);
+	
+	public String post(String url, Map<String, String> params);
 }
