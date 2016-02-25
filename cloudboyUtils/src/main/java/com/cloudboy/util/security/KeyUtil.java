@@ -137,7 +137,7 @@ public class KeyUtil {
 	}
 	
 	/**
-	 * 从PKCS12格式文件(*.pfx)中生成KeyStore对象
+	 * 从PKCS12格式文件(*.pfx, *.p12)中生成KeyStore对象
 	 * @param keyStoreFile
 	 * @param type keyStore的类型，jks, PKCS12。为空默认为：jks格式
 	 * @param storePassword KeyStore密码

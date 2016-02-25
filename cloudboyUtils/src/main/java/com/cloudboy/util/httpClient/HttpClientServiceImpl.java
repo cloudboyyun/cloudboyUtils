@@ -56,7 +56,7 @@ public class HttpClientServiceImpl implements HttpClientService {
 	private static Logger logger = Logger.getLogger(HttpClientServiceImpl.class);
 	private static XStream xs = new XStream();
 	private static int DEFAULT_CONNECTION_TIMEOUT = 10 * 1000;
-    private static int DEFAULT_SOCKET_TIMEOUT = 10 * 1000;
+    private static int DEFAULT_SOCKET_TIMEOUT = 50 * 1000;
     
     private PoolingHttpClientConnectionManager connManager = null;
     private RequestConfig defaultRequestConfig = null;

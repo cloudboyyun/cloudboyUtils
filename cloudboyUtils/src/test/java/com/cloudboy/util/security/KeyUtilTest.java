@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -17,6 +18,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Enumeration;
 
@@ -153,7 +155,7 @@ public class KeyUtilTest {
 		while(aliases.hasMoreElements()) {
 			String aliase = aliases.nextElement();
 			logger.info("aliase:" + aliase);
-		}		
+		}
 	}
 	
 	/**
@@ -206,5 +208,37 @@ public class KeyUtilTest {
 		PrivateKey privateKey2 = KeyUtil.convert2PrivateKey(privateKeyStr, "RSA");
 		logger.info(privateKey2.equals(privateKey));
 		assertTrue(privateKey2.equals(privateKey));
-	}	
+	}
+	
+	@Test
+	public void testAIAKey() throws Exception {
+		// 从P12文件中获得私钥
+		String keyPassword = "Console567890**";
+		InputStream keyStoreFile = KeyUtilTest.class.getResourceAsStream("/AIAKey.p12");
+		KeyStore keyStore = KeyUtil.getKeyStore(keyStoreFile, KeyUtil.KEYSTORE_TYPE_PKCS12, keyPassword);
+		Enumeration<String> aliases = keyStore.aliases();
+		String aliase = null;
+		while(aliases.hasMoreElements()) {
+			aliase = aliases.nextElement();
+			logger.info("aliase:" + aliase);
+		}
+		
+		Key privateKey = keyStore.getKey(aliase, keyPassword.toCharArray());
+		logger.info(privateKey.toString());
+		
+		// 从cert文件中获得公钥
+		InputStream keyStoreFile2 = KeyUtilTest.class.getResourceAsStream("/AIATouch_UAT_CER.cer");
+//		InputStream keyStoreFile2 = KeyUtilTest.class.getResourceAsStream("/AIAServer.crt");
+//		InputStream keyStoreFile2 = KeyUtilTest.class.getResourceAsStream("/AIACA.crt");
+		X509Certificate cert = KeyUtil.loadCertificate(keyStoreFile2);
+		PublicKey publicKey = cert.getPublicKey();
+		logger.info(publicKey.toString());
+		
+		// 使用公钥加密私钥解密
+		String data = "123xiayun";
+		String encryptedStr = SecurityUtil.encrypt(data, publicKey, null);
+		String str = SecurityUtil.decrypt(encryptedStr, privateKey, null);
+		logger.info("str: " + str);
+		assertTrue(str.equals(data));
+	}
 }
