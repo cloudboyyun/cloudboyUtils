@@ -1,7 +1,0 @@
-<project 
-	name="cloudboyUtils" 
-	default="" 
-	basedir="." 
-	xmlns:ivy="antlib:org.apache.ivy.ant">
-	<import file="${buildscripts.dir}/common-jar-targets.xml"/>
-</project>
