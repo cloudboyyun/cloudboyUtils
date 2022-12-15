@@ -66,11 +66,14 @@ public class PdfUtil {
 	}
 	
 	public static void main(String[] args) {
-		String sFile = "D:\\temp\\1\\中华人民共和国职业分类大典（2022年版）社会公示稿.pdf";
+		String sFile = "D:\\temp\\4\\国寿乐鑫宝终身寿险-15629.pdf_1.png";
 		File file = new File(sFile);
 		try {
 			String content = PdfUtil.readPdf(file, 3, 7);
-			File folder = new File("d:\\temp\\2");
+			File folder = new File("d:\\temp\\3");
+			if(!folder.exists()) {
+				folder.mkdir();
+			}
 			FileUtil.writeFile(folder, "codes.csv", content);
 			System.out.println(content);
 		} catch (IOException e) {

@@ -17,7 +17,7 @@ public class PdfUtilTest {
 
 	@Test
 	public void pdf2PngTest() {
-		String sFile = "D:\\temp\\1\\中华人民共和国职业分类大典（2022年版）社会公示稿.pdf";
+		String sFile = "D:\\docs\\中国寿险产品信息\\productClause\\productClause\\中国人寿保险股份有限公司\\人寿保险\\终身寿险\\国寿乐鑫宝终身寿险-15629.pdf";
 		File file = new File(sFile);
 		try {
 			List<PdfImagePage> list = PdfUtil.pdf2png(file);
